@@ -39,7 +39,7 @@
 				medium: 0.58,
 				high: 0.80
 			},
-		batchSize = 20;
+		maxScores = 20;
 	function processScores( data ) {
 		var i, revid, m, score, scoreData, scoreTitles, classes,
 			idsWithScores = Object.keys( data[conf.wgDBname].scores );
@@ -199,6 +199,7 @@
 
 	function load() {
 		var i = 0,
+			batchSize,
 			scoreBatch = function ( idsOnBatch, models ) {
 				$.ajax( {
 					url: serverUrl + conf.wgDBname + '/',
@@ -232,6 +233,7 @@
 					'More information at https://meta.wikimedia.org/wiki/ORES'
 				);
 			}
+			batchSize = Math.max(1, Math.floor(maxScores / models.length))
 			getRevIdsFromCurrentPage()
 			.done( function ( idsFromPage ) {
 				idsOnPage = idsFromPage;
