@@ -20,7 +20,7 @@
 			'ScoredRevisionsServerUrl',
 			'ScoredRevisionsEnableForPatrolledRevs' // Currently broken
 		] ),
-		serverUrl = conf.ScoredRevisionsServerUrl || '//ores.wikimedia.org/scores/',
+		serverUrl = conf.ScoredRevisionsServerUrl || '//ores.wikimedia.org/v3/scores/',
 		enabledOnCurrentPage = showScores && (
 				$.inArray( conf.wgCanonicalSpecialPageName, [
 					'Watchlist',
@@ -39,10 +39,10 @@
 				medium: 0.58,
 				high: 0.80
 			},
-		batchSize = 50;
+		batchSize = 20;
 	function processScores( data ) {
 		var i, revid, m, score, scoreData, scoreTitles, classes,
-			idsWithScores = Object.keys( data );
+			idsWithScores = Object.keys( data[conf.wgDBname].scores );
 		if ( data.error ) {
 			mw.log.error( data.error );
 			return;
@@ -51,13 +51,12 @@
 			revid = idsWithScores[ i ];
 			classes = [];
 			scoreTitles = [];
-			scoreData = data[ revid ];
+			scoreData = data[conf.wgDBname].scores[revid];
 			for ( m = 0; m < models.length; m++ ) {
 				if ( !scoreData || scoreData.error || scoreData[ models[ m ] ].error ) {
 					continue;
-				} else {
-					score = scoreData[ models[ m ] ].probability[ 'true' ];
 				}
+				score = scoreData[ models[ m ] ].score.probability.true;
 				scoreTitles.push( ( 100 * score ).toFixed( 0 ) + '% ' + models[ m ] );
 				// Allow users to customize the style (colors, icons, hide, etc) using classes
 				// 'sr-reverted-high', 'sr-reverted-medium', 'sr-reverted-low' and 'sr-reverted-none'
@@ -191,7 +190,7 @@
 				dfd.reject();
 				return;
 			}
-			dfd.resolve( Object.keys( data.models ) || [] );
+			dfd.resolve( Object.keys( data[conf.wgDBname].models ) || [] );
 		} )
 		.fail( dfd.reject );
 		return dfd.promise();
