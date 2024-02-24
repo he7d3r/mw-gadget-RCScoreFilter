@@ -9,7 +9,7 @@
 
 	var showScores = mw.util.getParamValue( 'showscores' ) !== '0',
 		models,
-		chosenModels = [ 'damaging', 'reverted' ],
+		chosenModels = [ 'damaging', 'reverted', 'goodfaith' ],
 		conf = mw.config.get( [
 			'wgIsArticle',
 			'wgCurRevisionId',
@@ -61,6 +61,7 @@
 				// Allow users to customize the style (colors, icons, hide, etc) using classes
 				// 'sr-reverted-high', 'sr-reverted-medium', 'sr-reverted-low' and 'sr-reverted-none'
 				// 'sr-damaging-high', 'sr-damaging-medium', 'sr-damaging-low' and 'sr-damaging-none'
+				// 'sr-goodfaith-high', 'sr-goodfaith-medium', 'sr-goodfaith-low' and 'sr-goodfaith-none'
 				classes.push(
 					score >= thresholds.high ?
 						'sr-' + models[ m ] + '-high' :

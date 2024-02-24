@@ -1,22 +1,28 @@
 .sr-reverted-high,
 .sr-damaging-high,
+.sr-goodfaith-low,
 /* Same specificity as "#pagehistory li.selected", from resources/src/mediawiki.legacy/shared.css */
 #pagehistory li.sr-reverted-high,
-#pagehistory li.sr-damaging-high {
+#pagehistory li.sr-damaging-high,
+#pagehistory li.sr-goodfaith-low {
 	background: #f4908a;
 }
 .sr-reverted-medium,
 .sr-damaging-medium,
+.sr-goodfaith-medium,
 /* Same specificity as "#pagehistory li.selected", from resources/src/mediawiki.legacy/shared.css */
 #pagehistory li.sr-reverted-medium,
-#pagehistory li.sr-damaging-medium  {
+#pagehistory li.sr-damaging-medium,
+#pagehistory li.sr-goodfaith-medium {
 	background: #ffbe99;
 }
 .sr-reverted-low,
 .sr-damaging-low,
+.sr-goodfaith-high,
 /* Same specificity as "#pagehistory li.selected", from resources/src/mediawiki.legacy/shared.css */
 #pagehistory li.sr-reverted-low,
-#pagehistory li.sr-damaging-low  {
+#pagehistory li.sr-damaging-low,
+#pagehistory li.sr-goodfaith-high {
 	background: #ffe099;
 }
 
@@ -25,20 +31,26 @@
 #ca-history .sr-reverted-low,
 #ca-history .sr-damaging-high,
 #ca-history .sr-damaging-medium,
-#ca-history .sr-damaging-low {
+#ca-history .sr-damaging-low,
+#ca-history .sr-goodfaith-high,
+#ca-history .sr-goodfaith-medium,
+#ca-history .sr-goodfaith-low {
 	background-position: left center;
 	background-repeat: no-repeat;
 	padding-left: 1.2em;
 }
 #ca-history .sr-reverted-high,
-#ca-history .sr-damaging-high {
+#ca-history .sr-damaging-high,
+#ca-history .sr-goodfaith-low {
 	background-image: url(https://upload.wikimedia.org/wikipedia/commons/2/2b/Icons-mini-flag_red.gif);
 }
 #ca-history .sr-reverted-medium,
-#ca-history .sr-damaging-medium {
+#ca-history .sr-damaging-medium,
+#ca-history .sr-goodfaith-medium {
 	background-image: url(https://upload.wikimedia.org/wikipedia/commons/f/ff/Icons-mini-flag_orange.gif);
 }
 #ca-history .sr-reverted-low,
-#ca-history .sr-damaging-low {
+#ca-history .sr-damaging-low,
+#ca-history .sr-goodfaith-high {
 	background-image: url(https://upload.wikimedia.org/wikipedia/commons/0/04/Icons-mini-flag_white.gif);
 }
