@@ -53,7 +53,13 @@
 			scoreTitles = [];
 			scoreData = data[conf.wgDBname].scores[revid];
 			for ( m = 0; m < models.length; m++ ) {
-				if ( !scoreData || scoreData.error || scoreData[ models[ m ] ].error ) {
+				if (
+					!scoreData ||
+					scoreData.error ||
+					!scoreData[ models[ m ] ] ||
+					scoreData[ models[ m ] ].error ||
+					!scoreData[ models[ m ] ].score
+				) {
 					continue;
 				}
 				score = scoreData[ models[ m ] ].score.probability.true;
