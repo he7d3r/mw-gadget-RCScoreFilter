@@ -18,7 +18,7 @@
 }
 .sr-reverted-low,
 .sr-damaging-low,
-.sr-goodfaith-high,
+/* .sr-goodfaith-high, */
 /* Same specificity as "#pagehistory li.selected", from resources/src/mediawiki.legacy/shared.css */
 #pagehistory li.sr-reverted-low,
 #pagehistory li.sr-damaging-low,
