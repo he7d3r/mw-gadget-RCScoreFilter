@@ -8,8 +8,7 @@
 	'use strict';
 
 	var showScores = mw.util.getParamValue( 'showscores' ) !== '0',
-		models,
-		chosenModels = [ 'damaging', 'reverted', 'goodfaith' ],
+		models = [ 'damaging', 'goodfaith' ], // 'reverted'
 		conf = mw.config.get( [
 			'wgIsArticle',
 			'wgCurRevisionId',
@@ -20,7 +19,7 @@
 			'ScoredRevisionsServerUrl',
 			'ScoredRevisionsEnableForPatrolledRevs' // Currently broken
 		] ),
-		serverUrl = conf.ScoredRevisionsServerUrl || '//ores.wikimedia.org/v3/scores/',
+		serverUrl = conf.ScoredRevisionsServerUrl || 'https://api.wikimedia.org/service/lw/inference/v1/models/',
 		enabledOnCurrentPage = showScores && (
 				$.inArray( conf.wgCanonicalSpecialPageName, [
 					'Watchlist',
@@ -38,50 +37,46 @@
 				low: 0.45,
 				medium: 0.58,
 				high: 0.80
-			},
-		maxScores = 20;
-	function processScores( data ) {
-		var i, revid, m, score, scoreData, scoreTitles, classes,
-			idsWithScores = Object.keys( data[conf.wgDBname].scores );
-		if ( data.error ) {
-			mw.log.error( data.error );
+			};
+	function processScores() {
+		var revid, m, score, scoreData, scoreTitles, classes;
+		if ( arguments[0][0].error ) {
+			mw.log.error( arguments[0][0].error );
 			return;
 		}
-		for ( i = 0; i < idsWithScores.length; i++ ) {
-			revid = idsWithScores[ i ];
-			classes = [];
-			scoreTitles = [];
-			scoreData = data[conf.wgDBname].scores[revid];
-			for ( m = 0; m < models.length; m++ ) {
-				if (
-					!scoreData ||
-					scoreData.error ||
-					!scoreData[ models[ m ] ] ||
-					scoreData[ models[ m ] ].error ||
-					!scoreData[ models[ m ] ].score
-				) {
-					continue;
-				}
-				score = scoreData[ models[ m ] ].score.probability.true;
-				scoreTitles.push( ( 100 * score ).toFixed( 0 ) + '% ' + models[ m ] );
-				// Allow users to customize the style (colors, icons, hide, etc) using classes
-				// 'sr-reverted-high', 'sr-reverted-medium', 'sr-reverted-low' and 'sr-reverted-none'
-				// 'sr-damaging-high', 'sr-damaging-medium', 'sr-damaging-low' and 'sr-damaging-none'
-				// 'sr-goodfaith-high', 'sr-goodfaith-medium', 'sr-goodfaith-low' and 'sr-goodfaith-none'
-				classes.push(
-					score >= thresholds.high ?
-						'sr-' + models[ m ] + '-high' :
-						score >= thresholds.medium ?
-							'sr-' + models[ m ] + '-medium' :
-							score >= thresholds.low ?
-								'sr-' + models[ m ] + '-low' :
-								'sr-' + models[ m ] + '-none'
-				);
+		revid = Object.keys(arguments[0][0][conf.wgDBname].scores)[0]
+		classes = [];
+		scoreTitles = [];
+		for ( m = 0; m < models.length; m++ ) {
+			scoreData = arguments[m][0][conf.wgDBname].scores[revid];
+			if (
+				!scoreData ||
+				scoreData.error ||
+				!scoreData[ models[ m ] ] ||
+				scoreData[ models[ m ] ].error ||
+				!scoreData[ models[ m ] ].score
+			) {
+				continue;
 			}
-			changes[ revid ]
-				.addClass( classes.join( ' ' ) )
-				.attr( 'title', 'Scores: ' + scoreTitles.join( '; ' ) );
+			score = scoreData[ models[ m ] ].score.probability.true;
+			scoreTitles.push( ( 100 * score ).toFixed( 0 ) + '% ' + models[ m ] );
+			// Allow users to customize the style (colors, icons, hide, etc) using classes
+			// 'sr-reverted-high', 'sr-reverted-medium', 'sr-reverted-low' and 'sr-reverted-none'
+			// 'sr-damaging-high', 'sr-damaging-medium', 'sr-damaging-low' and 'sr-damaging-none'
+			// 'sr-goodfaith-high', 'sr-goodfaith-medium', 'sr-goodfaith-low' and 'sr-goodfaith-none'
+			classes.push(
+				score >= thresholds.high ?
+					'sr-' + models[ m ] + '-high' :
+					score >= thresholds.medium ?
+						'sr-' + models[ m ] + '-medium' :
+						score >= thresholds.low ?
+							'sr-' + models[ m ] + '-low' :
+							'sr-' + models[ m ] + '-none'
+			);
 		}
+		changes[ revid ]
+			.addClass( classes.join( ' ' ) )
+			.attr( 'title', 'Scores: ' + scoreTitles.join( '; ' ) );
 	}
 
 	function getRevIdsFromCurrentPage() {
@@ -185,41 +180,35 @@
 		return dfd.promise();
 	}
 
-	function getAvailableModels() {
-		var dfd = $.Deferred();
-		$.ajax( {
-			url: serverUrl + conf.wgDBname + '/',
-			dataType: 'json'
-		} )
-		.done( function ( data ) {
-			if ( data.error ) {
-				mw.log.error( data.error );
-				dfd.reject();
-				return;
-			}
-			dfd.resolve( Object.keys( data[conf.wgDBname].models ) || [] );
-		} )
-		.fail( dfd.reject );
-		return dfd.promise();
+	function makeScoringRequest(db, model, rev_id) {
+		return $.ajax({
+			url: serverUrl + db + '-' + model + ':predict',
+			data: JSON.stringify({ rev_id: rev_id }),
+			contentType: 'application/json',
+			type: 'POST'
+		});
 	}
 
 	function load() {
 		var i = 0,
-			batchSize,
-			scoreBatch = function ( idsOnBatch, models ) {
-				$.ajax( {
-					url: serverUrl + conf.wgDBname + '/',
-					data: {
-						models: models.join( '|' ),
-						revids: idsOnBatch.join( '|' )
-					},
-					dataType: 'json'
-				} )
-				.done( function ( data ) {
-					processScores( data );
+			batchSize = 1,
+			scoreRevision = function ( revId, models ) {
+				var promises = [];
+				models.forEach( function( model ) {
+					promises.push(
+						makeScoringRequest( conf.wgDBname, model, Number(revId) )
+					);
+				} );
+				$.when.apply( $, promises )
+				.done( function() {
+					if (models.length === 1) {
+						processScores.apply(this, [arguments]);
+					} else {
+						processScores.apply(this, arguments);
+					}
 					i += batchSize;
 					if ( i < idsOnPage.length ) {
-						scoreBatch( idsOnPage.slice( i, i + batchSize ), models );
+						scoreRevision( idsOnPage[i], models );
 					}
 				} )
 				.fail( function () {
@@ -227,29 +216,12 @@
 				} );
 			};
 		mw.loader.load( '//meta.wikimedia.org/w/index.php?title=User:He7d3r/Tools/ScoredRevisions.css&action=raw&ctype=text/css', 'text/css' );
-		getAvailableModels()
-		.done( function ( availableModels ) {
-			models = $.map( chosenModels, function ( m ) {
-				return $.inArray( m, availableModels ) < 0 ? null : m;
-			} );
-			if ( !models.length ) {
-				mw.log.warn(
-					'ORES does not have any of the chosen models (' +
-					chosenModels.join( ', ' ) + ') for this wiki.\n' +
-					'More information at https://meta.wikimedia.org/wiki/ORES'
-				);
+		getRevIdsFromCurrentPage()
+		.done( function ( idsFromPage ) {
+			idsOnPage = idsFromPage;
+			if ( idsOnPage.length ) {
+				scoreRevision( idsOnPage[i], models );
 			}
-			batchSize = Math.max(1, Math.floor(maxScores / models.length))
-			getRevIdsFromCurrentPage()
-			.done( function ( idsFromPage ) {
-				idsOnPage = idsFromPage;
-				if ( idsOnPage.length ) {
-					scoreBatch( idsOnPage.slice( i, i + batchSize ), models );
-				}
-			} );
-		} )
-		.fail( function ( data ) {
-			mw.log.error( data );
 		} );
 	}
 
